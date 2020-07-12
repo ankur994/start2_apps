@@ -280,5 +280,54 @@ function change_password_driver(req, res) {
         })
 }
 
+//------------------------Block/Unblock driver-----------------------------
+function block_unblock_driver (req, res) {
+    Promise.coroutine (function *() {
+        let checkEmail = yield driverServices.checkDetails ({
+            email: req.body.email
+        })
+        if (_.isEmpty (checkEmail)){
+            return res.send ({
+                message: 'Driver not found',
+                status: 400,
+                data: {}
+            })
+        }
+        let is_blocked = req.body.is_blocked;
 
-module.exports = { register_driver, verify_otp_driver, login_driver, forgot_password_driver, change_password_driver }
+        if (is_blocked == '1'){
+        con.query(`Update tb_drivers set is_blocked = '1' where email = '${checkEmail[0].email}'`);
+            return res.send ({
+                message: 'Driver blocked successfully',
+                status: 200,
+                data: {}
+            })
+        }
+        if (is_blocked == '0'){
+            con.query(`Update tb_drivers set is_blocked = '0' where email = '${checkEmail[0].email}'`);
+            return res.send ({
+                message: 'Driver unblocked successfully',
+                status: 200,
+                data: {}
+            })
+        }
+        return res.send ({
+            message: 'Please enter 0 or 1',
+            status: 400,
+            data: {}
+        })
+    })
+    ().catch((error) => {
+        console.log('Blocked/Unblocked: Something went wrong', error)
+        return res.send({
+            message: 'Blocked/Unblocked: Something went wrong',
+            status: 400,
+            data: {}
+        })
+    })
+}
+
+
+
+module.exports = { register_driver, verify_otp_driver, login_driver, forgot_password_driver, change_password_driver, 
+    block_unblock_driver }

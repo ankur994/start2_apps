@@ -42,7 +42,6 @@ function checkDetails (options){
         }
 
         con.query (sql, params, function (error, result){
-            console.log('46783468',sql,params)
             if (error){
                 reject (error)
             }
