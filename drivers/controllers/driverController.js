@@ -6,7 +6,7 @@ var jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_KEY = 'secret';
 var con = require('../../config');
 
-//------------------------------Register user---------------------------------
+//------------------------------Register driver---------------------------------
 function register_driver(req, res) {
     Promise.coroutine(function* () {
             //---check email exist or not----
@@ -37,6 +37,9 @@ function register_driver(req, res) {
                 access_token: register_token,
                 otp: '1111',
                 is_verify: 0,
+                is_blocked: 0,
+                latitude: req.body.latitude,
+                longitude: req.body.longitude
             });
 
             //---------------json data---------------
@@ -47,6 +50,8 @@ function register_driver(req, res) {
                 phone_number: req.body.phone_number,
                 created_at: date,
                 access_token: register_token,
+                latitude: req.body.latitude,
+                longitude: req.body.longituden
             }
 
             if (!_.isEmpty(registerDriver)) {
@@ -328,6 +333,5 @@ function block_unblock_driver (req, res) {
 }
 
 
-
-module.exports = { register_driver, verify_otp_driver, login_driver, forgot_password_driver, change_password_driver, 
+module.exports = { register_driver, verify_otp_driver, login_driver, forgot_password_driver, change_password_driver,
     block_unblock_driver }

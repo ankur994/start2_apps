@@ -12,6 +12,7 @@ app.post('/change_password', middle.verify_token, user.change_password);
 app.post('/delete_user',user.delete_vendor);
 app.post('/update_user', middle.verify_token, user.update_vendor);
 app.post('/block_unblock_vendor', user.block_unblock_vendor);
+app.post('/get_all_drivers', user.get_all_drivers);
 
 //----------------Driver API's------------------
 app.post('/signup_driver', driver.register_driver);

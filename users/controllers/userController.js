@@ -5,6 +5,8 @@ var common = require('../../commonFunction');
 var jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_KEY = 'secret';
 var con = require('../../config');
+const driverServices = require('../../drivers/services/driverServices');
+const { result } = require('underscore');
 
 //------------------------------Register user---------------------------------
 function register_vendor(req, res) {
@@ -37,7 +39,7 @@ function register_vendor(req, res) {
                 access_token: register_token,
                 otp: '1111',
                 is_verify: 0,
-                is_blocked: 0,
+                is_blocked: 0
             });
 
             //---------------json data---------------
@@ -94,7 +96,7 @@ function verify_otp (req, res) {
                 data: {}
             })
         }
-         con.query(`Update tb_vendors set is_verify = '1' where phone_number = '${checkPhone[0].phone_number}'`);
+        con.query(`Update tb_vendors set is_verify = '1' where phone_number = '${checkPhone[0].phone_number}'`);
         return res.send ({
             message: 'OTP verified successfully',
             status: 200,
@@ -182,7 +184,7 @@ function login_vendor(req, res) {
 }
 
 //-----------------------------Forgot Password--------------------------------
-function forgot_password(req, res) {
+function forgot_password (req, res) {
     Promise.coroutine(function* () {
             let checkEmail = yield userServices.checkDetails({
                 email: req.body.email
@@ -283,7 +285,7 @@ function change_password(req, res) {
 }
 
 //--------------------------------Delete user---------------------------------
-function delete_vendor(req, res) {
+function delete_vendor (req, res) {
     Promise.coroutine(function* () {
             let checkEmail = yield userServices.checkDetails({
                 email: req.body.email
@@ -331,10 +333,19 @@ function update_vendor (req, res) {
                     data: {}
                 })
             }
-            
+            let checkEmail = yield userServices.checkDetails({
+                email: req.body.email, phone_number: req.body.phone_number
+            })
+            if (!_.isEmpty(checkEmail)) {
+                return res.send({
+                    message: 'User already exists',
+                    status: 400,
+                    data: {}
+                })
+            }
             let opts = {
                 updateObj: {},
-                whereCondition: {vendor_id: req.body.userData.vendor_id}
+                whereCondition: {email: req.body.userData.email}
             }
             if (req.body.first_name) {
                 opts.updateObj.first_name = req.body.first_name
@@ -348,19 +359,7 @@ function update_vendor (req, res) {
             if (req.body.email) {
                 opts.updateObj.email = req.body.email
             }
-            
-            let checkEmail = yield userServices.checkDetails({
-                email: req.body.email,
-                phone_number: req.body.phone_number
-            })
-            if (!_.isEmpty(checkEmail)) {
-                return res.send({
-                    message: 'User already exists',
-                    status: 400,
-                    data: {}
-                })
-            }
-            
+
             let updateDetail = yield userServices.updateVendor(opts);
             if (!_.isEmpty(updateDetail)) {
                 return res.send({
@@ -433,6 +432,69 @@ function block_unblock_vendor (req, res) {
     })
 }
 
+//----------------------------Get all drivers--------------------------------
+function get_all_drivers (req, res) {
+    Promise.coroutine (function *() {
+        let checkEmail = yield userServices.checkDetails ({
+            email: req.body.email
+        })
+        if (_.isEmpty (checkEmail)){
+            return res.send ({
+                message: 'Vendor not found',
+                status: 400,
+                data: {}
+            })
+        }
+        
+        let latitude = req.body.latitude;
+        let longitude = req.body.longitude;
+
+        con.query (`SELECT *, ( 6371 * acos(cos(radians('${latitude}')) * cos(radians(latitude)) * cos(radians(longitude) - radians
+         ('${longitude}')) + sin(radians('${latitude}')) * sin(radians(latitude )))) AS distance FROM tb_drivers HAVING 
+         distance < 33 ORDER BY distance LIMIT 0, 20`, function (error, result) {
+            if (error){
+                return res.send ({
+                    message: "Error in getting drivers",
+                    status: 201,
+                    data: {}
+                })
+            }
+            return res.send ({
+                message:'Drivers get successfully',
+                status: 201,
+                data: { result }
+            })
+        })
+
+        // let withoutPasswordDriver = [];
+        // checkAllDrivers.forEach((ele) => {
+        //     delete ele.password,
+        //         delete ele.otp,
+        //         delete ele.access_token
+        //     withoutPasswordDriver.push(ele);
+        // })
+        // if (_.isEmpty (checkAllDrivers))
+        // return res.send ({
+        //     message: 'Error in getting successfully',
+        //     status: 200,
+        //     data: {}
+        // })
+        // return res.send ({
+        //     message: 'Drivers get successfully',
+        //     status: 200,
+        //     data: { withoutPasswordDriver }
+        // })
+    })
+    ().catch((error) => {
+        console.log('Get all drivers: Something went wrong', error)
+        return res.send({
+            message: 'Get all drivers: Something went wrong',
+            status: 400,
+            data: {}
+        })
+    })
+}
 
 
-module.exports = { register_vendor, verify_otp, login_vendor, forgot_password, change_password, delete_vendor, update_vendor, block_unblock_vendor }
+module.exports = { register_vendor, verify_otp, login_vendor, forgot_password, change_password, delete_vendor, update_vendor, 
+    block_unblock_vendor, get_all_drivers }
