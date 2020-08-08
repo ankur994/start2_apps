@@ -3,10 +3,9 @@ var Promise = require('bluebird');
 var _ = require ('underscore');
 
 //-----------------Register email----------------------
-function registerUser (options){
+function registerCustomer (options){
     return new Promise ((resolve,reject) => {
-        con.query('INSERT into tb_vendors Set ?',options,(error,result) => {
-            console.log ('INSERT into tb_vendors Set ?',options);
+        con.query('INSERT into tb_customers Set ?',options,(error,result) => {
             if(error){
                 reject (error)
             }
@@ -18,12 +17,12 @@ function registerUser (options){
 //---------------Check user details already exist or not---------------
 function checkDetails (options){
     return new Promise ((resolve, reject) => {
-        let sql = 'Select * from tb_vendors where 1 ';
+        let sql = 'Select * from tb_customers where 1 ';
         let params = [];
 
-        if(options.vendor_id){
-            sql += ' AND vendor_id = ?';
-            params.push(options.vendor_id)
+        if(options.customer_id){
+            sql += ' AND customer_id = ?';
+            params.push(options.customer_id)
         }
 
         if(options.email){
@@ -53,8 +52,8 @@ function checkDetails (options){
 //-----------------------Delete email-----------------------------------
 function deleteEmail (options){
     return new Promise ((resolve, reject) => {
-        con.query ('Delete from tb_vendors where email = ?', options.email, function (error, result){
-            console.log ('Delete from tb_vendors where email = ?', options.email);
+        con.query ('Delete from tb_customers where email = ?', options.email, function (error, result){
+            console.log ('Delete from tb_customers where email = ?', options.email);
 
             if (error){
                 reject (error)
@@ -67,8 +66,8 @@ function deleteEmail (options){
 //-------------------Update user details (Method1)-------------------------------------
 function updateUser (options){
     return new Promise ((resolve, reject) => {
-        con.query('Update tb_vendors Set ? where email = ?', [options,options.email], (error, result) => {
-            console.log ('Update tb_vendors Set ? where email = ?', options,options.email)
+        con.query('Update tb_customers Set ? where email = ?', [options,options.email], (error, result) => {
+            console.log ('Update tb_customers Set ? where email = ?', options,options.email)
             if (error){
                 reject (error)
             }
@@ -78,15 +77,15 @@ function updateUser (options){
 }
 
 //-------------------Update user details (Method2)---------------------------
-function updateVendor (options){
+function updateCustomer (options){
     return new Promise ((resolve, reject) => {
-        let sql = 'Update tb_vendors Set ? where 1';
+        let sql = 'Update tb_customers Set ? where 1';
         let params = [options.updateObj];
         let whereCondition = options.whereCondition;
 
-        if(whereCondition.vendor_id){
-            sql += ' AND vendor_id =?',
-            params.push(whereCondition.vendor_id)
+        if(whereCondition.customer_id){
+            sql += ' AND customer_id =?',
+            params.push(whereCondition.customer_id)
         }
         if(whereCondition.email){
             sql += ' AND email =?',
@@ -104,4 +103,4 @@ function updateVendor (options){
 }
 
 
-module.exports = { registerUser, checkDetails, deleteEmail, updateUser, updateVendor }
+module.exports = { registerCustomer, checkDetails, deleteEmail, updateUser, updateCustomer }

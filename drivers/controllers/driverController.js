@@ -1,5 +1,5 @@
 var Promise = require('bluebird');
-var driverServices = require('../services/driverServices');
+var driverServices = require('../services/driverService');
 var _ = require('underscore');
 var common = require('../../commonFunction');
 var jwt = require('jsonwebtoken');

@@ -1,18 +1,17 @@
 var Promise = require('bluebird');
-var userServices = require('../services/userServices');
+var customerService = require('../services/customerService');
 var _ = require('underscore');
 var common = require('../../commonFunction');
 var jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_KEY = 'secret';
 var con = require('../../config');
-const driverServices = require('../../drivers/services/driverServices');
-const { result } = require('underscore');
+const { custom } = require('@hapi/joi');
 
 //------------------------------Register user---------------------------------
-function register_vendor(req, res) {
+function register_customer(req, res) {
     Promise.coroutine(function* () {
             //---check email exist or not----
-            let checkEmail = yield userServices.checkDetails({
+            let checkEmail = yield customerService.checkDetails({
                 email: req.body.email,
                 phone_number: req.body.phone_number
             });
@@ -29,7 +28,7 @@ function register_vendor(req, res) {
             var register_token = jwt.sign({ email: req.body.email }, secretKey, { expiresIn: '10d' });
 
             let date = new Date();
-            let registerUser = yield userServices.registerUser({
+            let registerCustomer = yield customerService.registerCustomer({
                 first_name: req.body.first_name,
                 last_name: req.body.last_name,
                 email: req.body.email,
@@ -43,7 +42,7 @@ function register_vendor(req, res) {
             });
 
             //---------------json data---------------
-            let new_user = {
+            let new_customer = {
                 first_name: req.body.first_name,
                 last_name: req.body.last_name,
                 email: req.body.email,
@@ -52,11 +51,11 @@ function register_vendor(req, res) {
                 access_token: register_token,
             }
 
-            if (!_.isEmpty(registerUser)) {
+            if (!_.isEmpty(registerCustomer)) {
                 return res.send({
                     message: 'Registered successfully',
                     status: 200,
-                    data: { new_user }
+                    data: { new_customer }
                 })
             }
             return res.send({
@@ -66,7 +65,7 @@ function register_vendor(req, res) {
             })
         })
         ().catch((error) => {
-            console.log('Register user: Something went wrong', error)
+            console.log('Register customer: Something went wrong', error)
             return res.send({
                 "message": "Register error: Something went wrong",
                 "status": 401,
@@ -78,12 +77,12 @@ function register_vendor(req, res) {
 //---------------------------Verify OTP--------------------------------------
 function verify_otp (req, res) {
     Promise.coroutine (function *() {
-        let checkPhone = yield userServices.checkDetails ({
+        let checkPhone = yield customerService.checkDetails ({
             phone_number: req.body.phone_number
         })
         if (_.isEmpty (checkPhone)){
             return res.send ({
-                message: 'User not found',
+                message: 'Customer not found',
                 status: 400,
                 data: {}
             })
@@ -96,7 +95,7 @@ function verify_otp (req, res) {
                 data: {}
             })
         }
-        con.query(`Update tb_vendors set is_verify = '1' where phone_number = '${checkPhone[0].phone_number}'`);
+        con.query(`Update tb_customers set is_verify = '1' where phone_number = '${checkPhone[0].phone_number}'`);
         return res.send ({
             message: 'OTP verified successfully',
             status: 200,
@@ -114,16 +113,16 @@ function verify_otp (req, res) {
 }
 
 //----------------------------------Login-------------------------------------
-function login_vendor(req, res) {
+function login_customer(req, res) {
     Promise.coroutine(function* () {
 
-            let checkEmail = yield userServices.checkDetails({
+            let checkEmail = yield customerService.checkDetails({
                 email: req.body.email,
             })
 
             if (_.isEmpty(checkEmail)) { // if email not exist
                 return res.send({
-                    message: 'User not found',
+                    message: 'Customer not found',
                     status: '200',
                     data: {}
                 })
@@ -157,9 +156,9 @@ function login_vendor(req, res) {
             //------------------------Method 2---------------------------
             let password = yield common.bcryptHashCompare(req.body.password, checkEmail[0].password);
             if (password) {
-                let token = jwt.sign({ email: checkEmail[0].email, vendor_id: checkEmail[0].vendor_id }, secretKey, { expiresIn: '10d' });
+                let token = jwt.sign({ email: checkEmail[0].email, customer_id: checkEmail[0].customer_id }, secretKey, { expiresIn: '10d' });
                 // for updating access_token in db
-                con.query(`Update tb_vendors set access_token = '${token}' where email = '${checkEmail[0].email}'`)
+                con.query(`Update tb_customers set access_token = '${token}' where email = '${checkEmail[0].email}'`)
                 return res.send({
                     message: 'Login successfully',
                     status: 200,
@@ -186,17 +185,17 @@ function login_vendor(req, res) {
 //-----------------------------Forgot Password--------------------------------
 function forgot_password (req, res) {
     Promise.coroutine(function* () {
-            let checkEmail = yield userServices.checkDetails({
+            let checkEmail = yield customerService.checkDetails({
                 email: req.body.email
             })
             if (_.isEmpty(checkEmail)) {
                 return res.send({
-                    message: 'User not exists',
+                    message: 'Customer not exists',
                     status: 400,
                     data: {}
                 })
             }
-            let reset_password = yield userServices.updateUser({
+            let reset_password = yield customerService.updateCustomer({
                 email: req.body.email,
                 password: yield common.bcryptHash(req.body.password)
             })
@@ -228,14 +227,14 @@ function forgot_password (req, res) {
 function change_password(req, res) {
     Promise.coroutine(function* () {
 
-            let checkEmail = yield userServices.checkDetails({
+            let checkEmail = yield customerService.checkDetails({
                 email: req.body.userData.email
             })
             console.log ('5787685', req.body.userData.email)
 
             if (_.isEmpty(checkEmail)) {
                 return res.send({
-                    message: 'User not exists',
+                    message: 'Customer not exists',
                     status: 400,
                     data: {}
                 })
@@ -256,7 +255,7 @@ function change_password(req, res) {
                     data: {}
                 })
             }
-            let newPassword = yield userServices.updateUser({
+            let newPassword = yield customerService.updateCustomer({
                 email: req.body.userData.email,
                 password: yield common.bcryptHash(req.body.newPassword)
             })
@@ -285,25 +284,25 @@ function change_password(req, res) {
 }
 
 //--------------------------------Delete user---------------------------------
-function delete_vendor (req, res) {
+function delete_customer (req, res) {
     Promise.coroutine(function* () {
-            let checkEmail = yield userServices.checkDetails({
+            let checkEmail = yield customerService.checkDetails({
                 email: req.body.email
             })
             if (_.isEmpty(checkEmail)) {
                 return res.send({
-                    message: 'User not found',
+                    message: 'Customer not found',
                     status: 400,
                     data: {}
                 })
             }
-            let user = yield userServices.deleteEmail({
+            let customer = yield customerService.deleteEmail({
                 email: req.body.email
             })
 
-            if (!_.isEmpty(user)) {
+            if (!_.isEmpty(customer)) {
                 return res.send({
-                    message: 'User deleted successfully',
+                    message: 'Customer deleted successfully',
                     status: 400,
                     data: {}
                 })
@@ -320,25 +319,25 @@ function delete_vendor (req, res) {
 }
 
 //----------------------------Update user details-----------------------------
-function update_vendor (req, res) {
+function update_customer (req, res) {
     Promise.coroutine(function* () {
 
-            let checkId = yield userServices.checkDetails({
-                vendor_id: req.body.userData.vendor_id
+            let checkId = yield customerService.checkDetails({
+                customer_id: req.body.userData.customer_id
             })
             if (_.isEmpty(checkId)) {
                 return res.send({
-                    message: 'User not exists',
+                    message: 'Customer not exists',
                     status: 400,
                     data: {}
                 })
             }
-            let checkEmail = yield userServices.checkDetails({
+            let checkEmail = yield customerService.checkDetails({
                 email: req.body.email, phone_number: req.body.phone_number
             })
             if (!_.isEmpty(checkEmail)) {
                 return res.send({
-                    message: 'User already exists',
+                    message: 'Customer already exists',
                     status: 400,
                     data: {}
                 })
@@ -360,10 +359,10 @@ function update_vendor (req, res) {
                 opts.updateObj.email = req.body.email
             }
 
-            let updateDetail = yield userServices.updateVendor(opts);
+            let updateDetail = yield customerService.updateCustomer(opts);
             if (!_.isEmpty(updateDetail)) {
                 return res.send({
-                    message: 'User details updated successfully',
+                    message: 'Customer details updated successfully',
                     status: 200,
                     data: {}
                 })
@@ -376,9 +375,9 @@ function update_vendor (req, res) {
 
         })
         ().catch((error) => {
-            console.log('Update user: Something went wrong', error)
+            console.log('Update customer: Something went wrong', error)
             return res.send({
-                message: 'Update user: Something went wrong',
+                message: 'Update customer: Something went wrong',
                 status: 400,
                 data: {}
             })
@@ -386,14 +385,14 @@ function update_vendor (req, res) {
 }
 
 //------------------------Block/Unblock user-----------------------------
-function block_unblock_vendor (req, res) {
+function block_unblock_customer (req, res) {
     Promise.coroutine (function *() {
-        let checkEmail = yield userServices.checkDetails ({
+        let checkEmail = yield customerService.checkDetails ({
             email: req.body.email
         })
         if (_.isEmpty (checkEmail)){
             return res.send ({
-                message: 'Vendor not found',
+                message: 'Customer not found',
                 status: 400,
                 data: {}
             })
@@ -401,17 +400,17 @@ function block_unblock_vendor (req, res) {
         let is_blocked = req.body.is_blocked;
 
         if (is_blocked == '1'){
-        con.query(`Update tb_vendors set is_blocked = '1' where email = '${checkEmail[0].email}'`);
+        con.query(`Update tb_customers set is_blocked = '1' where email = '${checkEmail[0].email}'`);
             return res.send ({
-                message: 'Vendor blocked successfully',
+                message: 'Customer blocked successfully',
                 status: 200,
                 data: {}
             })
         }
         if (is_blocked == '0'){
-            con.query(`Update tb_vendors set is_blocked = '0' where email = '${checkEmail[0].email}'`);
+            con.query(`Update tb_customers set is_blocked = '0' where email = '${checkEmail[0].email}'`);
             return res.send ({
-                message: 'Vendor unblocked successfully',
+                message: 'Customer unblocked successfully',
                 status: 200,
                 data: {}
             })
@@ -435,12 +434,12 @@ function block_unblock_vendor (req, res) {
 //----------------------------Get all drivers--------------------------------
 function get_all_drivers (req, res) {
     Promise.coroutine (function *() {
-        let checkEmail = yield userServices.checkDetails ({
+        let checkEmail = yield customerService.checkDetails ({
             email: req.body.email
         })
         if (_.isEmpty (checkEmail)){
             return res.send ({
-                message: 'Vendor not found',
+                message: 'Customer not found',
                 status: 400,
                 data: {}
             })
@@ -496,5 +495,5 @@ function get_all_drivers (req, res) {
 }
 
 
-module.exports = { register_vendor, verify_otp, login_vendor, forgot_password, change_password, delete_vendor, update_vendor, 
-    block_unblock_vendor, get_all_drivers }
+module.exports = { register_customer, verify_otp, login_customer, forgot_password, change_password, delete_customer, update_customer, 
+    block_unblock_customer, get_all_drivers }
