@@ -3,6 +3,7 @@ var customerService = require('../services/customerService');
 var _ = require('underscore');
 var common = require('../../commonFunction');
 var jwt = require('jsonwebtoken');
+var otp = require ('../../commonFunction');
 const secretKey = process.env.JWT_KEY = 'secret';
 var con = require('../../config');
 const { custom } = require('@hapi/joi');
@@ -34,11 +35,12 @@ function register_customer(req, res) {
                 email: req.body.email,
                 phone_number: req.body.phone_number,
                 password: yield common.bcryptHash(req.body.password),
-                created_at: date,
                 access_token: register_token,
-                otp: '1111',
+                otp: otp.generateOTP(),
                 is_verify: 0,
-                is_blocked: 0
+                is_blocked: 0,
+                created_at: date,
+                updated_at: date
             });
 
             //---------------json data---------------
@@ -47,8 +49,12 @@ function register_customer(req, res) {
                 last_name: req.body.last_name,
                 email: req.body.email,
                 phone_number: req.body.phone_number,
-                created_at: date,
                 access_token: register_token,
+                otp: otp.generateOTP(),
+                is_verify: 0,
+                is_blocked: 0,
+                created_at: date,
+                updated_at: date
             }
 
             if (!_.isEmpty(registerCustomer)) {
