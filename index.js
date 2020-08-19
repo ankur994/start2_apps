@@ -26,12 +26,14 @@ app.post ('/login_driver',              driverJoi.loginDriverValidation, driver.
 app.post('/forgot_password_driver',     driverJoi.forgotDriverValidation, driver.forgot_password_driver);
 app.post ('/change_password_driver',    driverJoi.changePasswordValidation, middle.verify_token, driver.change_password_driver);
 app.post('/block_unblock_driver',       driverJoi.blockDriverValidation, driver.block_unblock_driver);
+app.post('/delete_driver',              driverJoi.deleteDriverValidation, driver.delete_driver);
 
 //----------------Product API's------------------
 app.post('/register_product',           productJoi.registerProductValidation, product.register_product);
 app.post('/get_all_products',           productJoi.getProductsValidation, product.get_all_products);
 app.post('/block_unblock_product',      productJoi.blockProductValidation, product.block_unblock_product);
 app.post('/update_product',             productJoi.updateProductValidation, product.update_product);
+app.post('/delete_product',             productJoi.deleteProductValidation, product.delete_product);
 
 //----------------Order API's------------------
 app.post('/create_order', middle.verify_token, order.create_order);

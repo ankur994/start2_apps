@@ -5,7 +5,7 @@ var jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_KEY = 'secret';
 var con = require('../../config');
 
-//------------------------------Register user---------------------------------
+//------------------------------Register product---------------------------------
 function register_product(req, res) {
     Promise.coroutine(function* () {
 
@@ -177,5 +177,40 @@ function block_unblock_product (req, res) {
     })
 }
 
+//--------------------------------Delete product---------------------------------
+function delete_product (req, res) {
+    Promise.coroutine(function* () {
+            let checkProduct = yield productServices.checkProduct({
+                product_id: req.body.product_id
+            })
+            if (_.isEmpty(checkProduct)) {
+                return res.send({
+                    message: 'Product not found',
+                    status: 400,
+                    data: {}
+                })
+            }
+      
+            let product = con.query(`Update tb_products set is_deleted = '1' where product_id = '${checkProduct[0].product_id}'`);
 
-module.exports = { register_product, get_all_products, update_product, block_unblock_product }
+            if (!_.isEmpty(product)) {
+                return res.send({
+                    message: 'Product deleted successfully',
+                    status: 400,
+                    data: {}
+                })
+            }
+        })
+        ().catch((error) => {
+            console.log('Delete product: Something went wrong', error)
+            return res.send({
+                message: 'Delete product: Something went wrong',
+                status: 400,
+                data: {}
+            })
+        })
+}
+
+
+
+module.exports = { register_product, get_all_products, update_product, block_unblock_product, delete_product }

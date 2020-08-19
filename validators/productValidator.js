@@ -75,7 +75,7 @@ function blockProductValidation (req, res, next){
 //-------------------Delete product--------------------------
 function deleteProductValidation (req, res, next){
   const schema = Joi.object({
-    _id: Joi.string().required()
+    product_id: Joi.string().required()
   })
   
   return new Promise (async (reject, resolve) => {

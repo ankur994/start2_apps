@@ -1,5 +1,5 @@
 var Promise = require('bluebird');
-var driverServices = require('../services/driverService');
+var driverService = require('../services/driverService');
 var _ = require('underscore');
 var common = require('../../commonFunction');
 var jwt = require('jsonwebtoken');
@@ -11,7 +11,7 @@ var con = require('../../config');
 function register_driver(req, res) {
     Promise.coroutine(function* () {
             //---check email exist or not----
-            let checkEmail = yield driverServices.checkDetails({
+            let checkEmail = yield driverService.checkDetails({
                 email: req.body.email,
                 phone_number: req.body.phone_number
             });
@@ -28,7 +28,7 @@ function register_driver(req, res) {
             var register_token = jwt.sign({ email: req.body.email }, secretKey, { expiresIn: '10d' });
 
             let date = new Date();
-            let registerDriver = yield driverServices.registerDriver({
+            let registerDriver = yield driverService.registerDriver({
                 first_name: req.body.first_name,
                 last_name: req.body.last_name,
                 email: req.body.email,
@@ -84,10 +84,17 @@ function register_driver(req, res) {
 //---------------------------Verify OTP--------------------------------------
 function verify_otp_driver (req, res) {
     Promise.coroutine (function *() {
-        let checkPhone = yield driverServices.checkDetails ({
+        let checkPhone = yield driverService.checkDetails ({
             phone_number: req.body.phone_number
         })
         if (_.isEmpty (checkPhone)){
+            return res.send ({
+                message: 'Driver not found',
+                status: 400,
+                data: {}
+            })
+        }
+        if (checkPhone[0].is_deleted == 1){
             return res.send ({
                 message: 'Driver not found',
                 status: 400,
@@ -131,7 +138,7 @@ function verify_otp_driver (req, res) {
 function login_driver(req, res) {
     Promise.coroutine(function* () {
 
-            let checkEmail = yield driverServices.checkDetails({
+            let checkEmail = yield driverService.checkDetails({
                 email: req.body.email,
             })
 
@@ -139,6 +146,13 @@ function login_driver(req, res) {
                 return res.send({
                     message: 'Driver not found',
                     status: '400',
+                    data: {}
+                })
+            }
+            if (checkEmail[0].is_deleted == 1){
+                return res.send ({
+                    message: 'Driver not found',
+                    status: 400,
                     data: {}
                 })
             }
@@ -193,7 +207,7 @@ function login_driver(req, res) {
 //-----------------------------Forgot Password--------------------------------
 function forgot_password_driver(req, res) {
     Promise.coroutine(function* () {
-            let checkEmail = yield driverServices.checkDetails({
+            let checkEmail = yield driverService.checkDetails({
                 email: req.body.email
             })
             if (_.isEmpty(checkEmail)) {
@@ -203,7 +217,14 @@ function forgot_password_driver(req, res) {
                     data: {}
                 })
             }
-            let reset_password = yield driverServices.updateUser({
+            if (checkEmail[0].is_deleted == 1){
+                return res.send ({
+                    message: 'Driver not found',
+                    status: 400,
+                    data: {}
+                })
+            }
+            let reset_password = yield driverService.updateUser({
                 email: req.body.email,
                 password: yield common.bcryptHash(req.body.password)
             })
@@ -234,7 +255,7 @@ function forgot_password_driver(req, res) {
 //-----------------------------Change Password--------------------------------
 function change_password_driver(req, res) {
     Promise.coroutine(function* () {
-            let checkEmail = yield driverServices.checkDetails({
+            let checkEmail = yield driverService.checkDetails({
                 email: req.body.userData.email
             })
 
@@ -261,7 +282,7 @@ function change_password_driver(req, res) {
                     data: {}
                 })
             }
-            let newPassword = yield driverServices.updateUser({
+            let newPassword = yield driverService.updateUser({
                 email: req.body.userData.email,
                 password: yield common.bcryptHash(req.body.newPassword)
             })
@@ -292,7 +313,7 @@ function change_password_driver(req, res) {
 //------------------------Block/Unblock driver-----------------------------
 function block_unblock_driver (req, res) {
     Promise.coroutine (function *() {
-        let checkEmail = yield driverServices.checkDetails ({
+        let checkEmail = yield driverService.checkDetails ({
             email: req.body.email
         })
         if (_.isEmpty (checkEmail)){
@@ -336,6 +357,39 @@ function block_unblock_driver (req, res) {
     })
 }
 
+//--------------------------------Delete driver---------------------------------
+function delete_driver (req, res) {
+    Promise.coroutine(function* () {
+            let checkEmail = yield driverService.checkDetails({
+                email: req.body.email
+            })
+            if (_.isEmpty(checkEmail)) {
+                return res.send({
+                    message: 'Driver not found',
+                    status: 400,
+                    data: {}
+                })
+            }
+      
+            let driver = con.query(`Update tb_drivers set is_deleted = '1' where email = '${checkEmail[0].email}'`);
+
+            if (!_.isEmpty(driver)) {
+                return res.send({
+                    message: 'Driver deleted successfully',
+                    status: 400,
+                    data: {}
+                })
+            }
+        })
+        ().catch((error) => {
+            console.log('Delete driver: Something went wrong', error)
+            return res.send({
+                message: 'Delete driver: Something went wrong',
+                status: 400,
+                data: {}
+            })
+        })
+}
 
 module.exports = { register_driver, verify_otp_driver, login_driver, forgot_password_driver, change_password_driver,
-    block_unblock_driver }
+    block_unblock_driver, delete_driver }

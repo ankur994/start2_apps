@@ -8,7 +8,7 @@ const secretKey = process.env.JWT_KEY = 'secret';
 var con = require('../../config');
 const { custom } = require('@hapi/joi');
 
-//------------------------------Register user---------------------------------
+//------------------------------Register customer---------------------------------
 function register_customer(req, res) {
     Promise.coroutine(function* () {
             //---check email exist or not----
@@ -41,8 +41,7 @@ function register_customer(req, res) {
                 is_blocked: 0,
                 created_at: date,
                 updated_at: date
-            });
-
+        });
             //---------------json data---------------
             let new_customer = {
                 first_name: req.body.first_name,
@@ -93,6 +92,13 @@ function verify_otp (req, res) {
                 data: {}
             })
         }
+        if (checkPhone[0].is_deleted == 1){
+            return res.send ({
+                message: 'Customer not found',
+                status: 400,
+                data: {}
+            })
+        }
         let otp = req.body.otp;
         if (otp != checkPhone[0].otp){
             return res.send ({
@@ -130,6 +136,13 @@ function login_customer(req, res) {
                 return res.send({
                     message: 'Customer not found',
                     status: '200',
+                    data: {}
+                })
+            }
+            if (checkEmail[0].is_deleted == 1){
+                return res.send ({
+                    message: 'Customer not found',
+                    status: 400,
                     data: {}
                 })
             }
@@ -179,7 +192,7 @@ function login_customer(req, res) {
             })
         })
         ().catch((error) => {
-            console.log('Login user: Something went wrong', error)
+            console.log('Login customer: Something went wrong', error)
             return res.send({
                 message: 'Login error: Something went wrong',
                 status: 400,
@@ -197,6 +210,13 @@ function forgot_password (req, res) {
             if (_.isEmpty(checkEmail)) {
                 return res.send({
                     message: 'Customer not exists',
+                    status: 400,
+                    data: {}
+                })
+            }
+            if (checkEmail[0].is_deleted == 1){
+                return res.send ({
+                    message: 'Customer not found',
                     status: 400,
                     data: {}
                 })
@@ -236,7 +256,6 @@ function change_password(req, res) {
             let checkEmail = yield customerService.checkDetails({
                 email: req.body.userData.email
             })
-            console.log ('5787685', req.body.userData.email)
 
             if (_.isEmpty(checkEmail)) {
                 return res.send({
@@ -289,7 +308,7 @@ function change_password(req, res) {
         })
 }
 
-//--------------------------------Delete user---------------------------------
+//--------------------------------Delete customer---------------------------------
 function delete_customer (req, res) {
     Promise.coroutine(function* () {
             let checkEmail = yield customerService.checkDetails({
@@ -302,9 +321,8 @@ function delete_customer (req, res) {
                     data: {}
                 })
             }
-            let customer = yield customerService.deleteEmail({
-                email: req.body.email
-            })
+      
+            let customer = con.query(`Update tb_customers set is_deleted = '1' where email = '${checkEmail[0].email}'`);
 
             if (!_.isEmpty(customer)) {
                 return res.send({
@@ -315,16 +333,16 @@ function delete_customer (req, res) {
             }
         })
         ().catch((error) => {
-            console.log('Delete user: Something went wrong', error)
+            console.log('Delete customer: Something went wrong', error)
             return res.send({
-                message: 'Delete user: Something went wrong',
+                message: 'Delete customer: Something went wrong',
                 status: 400,
                 data: {}
             })
         })
 }
 
-//----------------------------Update user details-----------------------------
+//----------------------------Update customer details-----------------------------
 function update_customer (req, res) {
     Promise.coroutine(function* () {
 
@@ -339,7 +357,8 @@ function update_customer (req, res) {
                 })
             }
             let checkEmail = yield customerService.checkDetails({
-                email: req.body.email, phone_number: req.body.phone_number
+                email: req.body.email, 
+                phone_number: req.body.phone_number
             })
             if (!_.isEmpty(checkEmail)) {
                 return res.send({
@@ -374,7 +393,7 @@ function update_customer (req, res) {
                 })
             }
             return res.send({
-                message: 'Error in updating user details',
+                message: 'Error in updating customer details',
                 status: 400,
                 data: {}
             })
@@ -390,7 +409,7 @@ function update_customer (req, res) {
         })
 }
 
-//------------------------Block/Unblock user-----------------------------
+//------------------------Block/Unblock customer-----------------------------
 function block_unblock_customer (req, res) {
     Promise.coroutine (function *() {
         let checkEmail = yield customerService.checkDetails ({
