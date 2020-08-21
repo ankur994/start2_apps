@@ -16,11 +16,16 @@ function registerDriver (options){
 };
 
 //---------------Check driver details already exist or not---------------
-function checkDetails (options){
+function checkDriverDetails (options){
     return new Promise ((resolve, reject) => {
         let sql = 'Select * from tb_drivers where 1 ';
         let params = [];
 
+        if (options.hasOwnProperty('is_deleted')){
+            sql += ' AND is_deleted = ?';
+            params.push(options.is_deleted)
+        }
+        
         if(options.driver_id){
             sql += ' AND driver_id = ?';
             params.push(options.driver_id)
@@ -91,4 +96,4 @@ function updateDriver (options){
 }
 
 
-module.exports = { registerDriver, checkDetails, updateUser, updateDriver }
+module.exports = { registerDriver, checkDriverDetails, updateUser, updateDriver }

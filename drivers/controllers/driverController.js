@@ -11,15 +11,25 @@ var con = require('../../config');
 function register_driver(req, res) {
     Promise.coroutine(function* () {
             //---check email exist or not----
-            let checkEmail = yield driverService.checkDetails({
+            let checkEmail = yield driverService.checkDriverDetails({
                 email: req.body.email,
-                phone_number: req.body.phone_number
+                is_deleted: 0
             });
-
             if (!_.isEmpty(checkEmail)) {
                 // if (checkEmail.length > 1){
                 return res.send({
-                    message: 'Email or Phone no. already exists',
+                    message: 'Email already exists',
+                    status: 401,
+                    data: {}
+                })
+            }
+            let checkPhone = yield driverService.checkDriverDetails({
+                phone_number: req.body.phone_number,
+                is_deleted: 0
+            });
+            if (!_.isEmpty(checkPhone)) {
+                return res.send({
+                    message: 'Phone no. already exists',
                     status: 401,
                     data: {}
                 })
@@ -84,7 +94,7 @@ function register_driver(req, res) {
 //---------------------------Verify OTP--------------------------------------
 function verify_otp_driver (req, res) {
     Promise.coroutine (function *() {
-        let checkPhone = yield driverService.checkDetails ({
+        let checkPhone = yield driverService.checkCustomerDetails ({
             phone_number: req.body.phone_number
         })
         if (_.isEmpty (checkPhone)){
@@ -138,7 +148,7 @@ function verify_otp_driver (req, res) {
 function login_driver(req, res) {
     Promise.coroutine(function* () {
 
-            let checkEmail = yield driverService.checkDetails({
+            let checkEmail = yield driverService.checkDriverDetails({
                 email: req.body.email,
             })
 
@@ -207,7 +217,7 @@ function login_driver(req, res) {
 //-----------------------------Forgot Password--------------------------------
 function forgot_password_driver(req, res) {
     Promise.coroutine(function* () {
-            let checkEmail = yield driverService.checkDetails({
+            let checkEmail = yield driverService.checkDetcheckCustomerDetailsails({
                 email: req.body.email
             })
             if (_.isEmpty(checkEmail)) {
@@ -255,7 +265,7 @@ function forgot_password_driver(req, res) {
 //-----------------------------Change Password--------------------------------
 function change_password_driver(req, res) {
     Promise.coroutine(function* () {
-            let checkEmail = yield driverService.checkDetails({
+            let checkEmail = yield driverService.checkDriverDetails({
                 email: req.body.userData.email
             })
 
@@ -310,10 +320,87 @@ function change_password_driver(req, res) {
         })
 }
 
+//----------------------------Update driver details-----------------------------
+function update_driver (req, res) {
+    Promise.coroutine(function* () {
+
+            let checkId = yield driverService.checkDriverDetails({
+                driver_id: req.body.userData.driver_id
+            })
+            if (_.isEmpty(checkId)) {
+                return res.send({
+                    message: 'Driver not found',
+                    status: 400,
+                    data: {}
+                })
+            }
+           
+            let opts = {
+                updateObj: {},
+                whereCondition: {driver_id: req.body.userData.driver_id}
+            }
+            if (req.body.first_name) {
+                opts.updateObj.first_name = req.body.first_name
+            }
+            if (req.body.last_name) {
+                opts.updateObj.last_name = req.body.last_name
+            }
+            if (req.body.phone_number) {
+                opts.updateObj.phone_number = req.body.phone_number
+            }
+            if (req.body.email) {
+                opts.updateObj.email = req.body.email
+            }
+            if (opts.updateObj.email) {
+                let checkDetail = yield driverService.checkDriverDetails ({email: opts.updateObj.email, is_deleted: 0});
+                if (!_.isEmpty(checkDetail)) {
+                    return res.send({
+                        message: 'Email already exists',
+                        status: 200,
+                        data: {}
+                    })
+                }
+            }
+            if (opts.updateObj.phone_number){
+                let checkDetail = yield driverService.checkDriverDetails ({phone_number: opts.updateObj.phone_number, is_deleted: 0});
+                if (!_.isEmpty(checkDetail)) {
+                    return res.send({
+                        message: 'Phone no. already exists',
+                        status: 200,
+                        data: {}
+                    })
+                }
+            }
+           
+            let updateDriver = yield driverService.updateDriver(opts);
+            if (!_.isEmpty(updateDriver)) {
+                return res.send({
+                    message: 'Driver details updated successfully',
+                    status: 200,
+                    data: {}
+                })
+            }
+            return res.send({
+                message: 'Error in updating driver details',
+                status: 400,
+                data: {}
+            })
+
+        })
+        ().catch((error) => {
+            console.log('Update driver: Something went wrong', error)
+            return res.send({
+                message: 'Update driver: Something went wrong',
+                status: 400,
+                data: {}
+            })
+        })
+}
+
 //------------------------Block/Unblock driver-----------------------------
 function block_unblock_driver (req, res) {
     Promise.coroutine (function *() {
-        let checkEmail = yield driverService.checkDetails ({
+        let checkEmail = yield driverService.checkDriverDetails ({
             email: req.body.email
         })
         if (_.isEmpty (checkEmail)){
@@ -360,7 +447,7 @@ function block_unblock_driver (req, res) {
 //--------------------------------Delete driver---------------------------------
 function delete_driver (req, res) {
     Promise.coroutine(function* () {
-            let checkEmail = yield driverService.checkDetails({
+            let checkEmail = yield driverService.checkDriverDetails({
                 email: req.body.email
             })
             if (_.isEmpty(checkEmail)) {
@@ -372,7 +459,6 @@ function delete_driver (req, res) {
             }
       
             let driver = con.query(`Update tb_drivers set is_deleted = '1' where email = '${checkEmail[0].email}'`);
-
             if (!_.isEmpty(driver)) {
                 return res.send({
                     message: 'Driver deleted successfully',
@@ -391,5 +477,5 @@ function delete_driver (req, res) {
         })
 }
 
-module.exports = { register_driver, verify_otp_driver, login_driver, forgot_password_driver, change_password_driver,
+module.exports = { register_driver, verify_otp_driver, login_driver, forgot_password_driver, change_password_driver, update_driver,
     block_unblock_driver, delete_driver }

@@ -12,20 +12,29 @@ const { custom } = require('@hapi/joi');
 function register_customer(req, res) {
     Promise.coroutine(function* () {
             //---check email exist or not----
-            let checkEmail = yield customerService.checkDetails({
+            let checkEmail = yield customerService.checkCustomerDetails ({
                 email: req.body.email,
-                phone_number: req.body.phone_number
-            });
-
-            if (!_.isEmpty(checkEmail)) {
+                is_deleted: 0
+            })
+            if (!_.isEmpty(checkEmail) ) {
                 // if (checkEmail.length > 1){
                 return res.send({
-                    message: 'Email or Phone no. already exists',
+                    message: 'Email already exists',
                     status: 401,
                     data: {}
                 })
             }
-            //----add email-----
+            let checkPhone = yield customerService.checkCustomerDetails ({
+                phone_number: req.body.phone_number,
+                is_deleted: 0
+            })
+            if (!_.isEmpty(checkPhone) ) {
+                return res.send({
+                    message: 'Phone no. already exists',
+                    status: 401,
+                    data: {}
+                })
+            }
             var register_token = jwt.sign({ email: req.body.email }, secretKey, { expiresIn: '10d' });
 
             let date = new Date();
@@ -82,7 +91,7 @@ function register_customer(req, res) {
 //---------------------------Verify OTP--------------------------------------
 function verify_otp (req, res) {
     Promise.coroutine (function *() {
-        let checkPhone = yield customerService.checkDetails ({
+        let checkPhone = yield customerService.checkCustomerDetails ({
             phone_number: req.body.phone_number
         })
         if (_.isEmpty (checkPhone)){
@@ -128,7 +137,7 @@ function verify_otp (req, res) {
 function login_customer(req, res) {
     Promise.coroutine(function* () {
 
-            let checkEmail = yield customerService.checkDetails({
+            let checkEmail = yield customerService.checkCustomerDetails({
                 email: req.body.email,
             })
 
@@ -204,7 +213,7 @@ function login_customer(req, res) {
 //-----------------------------Forgot Password--------------------------------
 function forgot_password (req, res) {
     Promise.coroutine(function* () {
-            let checkEmail = yield customerService.checkDetails({
+            let checkEmail = yield customerService.checkCustomerDetails({
                 email: req.body.email
             })
             if (_.isEmpty(checkEmail)) {
@@ -253,7 +262,7 @@ function forgot_password (req, res) {
 function change_password(req, res) {
     Promise.coroutine(function* () {
 
-            let checkEmail = yield customerService.checkDetails({
+            let checkEmail = yield customerService.checkCustomerDetails({
                 email: req.body.userData.email
             })
 
@@ -311,7 +320,7 @@ function change_password(req, res) {
 //--------------------------------Delete customer---------------------------------
 function delete_customer (req, res) {
     Promise.coroutine(function* () {
-            let checkEmail = yield customerService.checkDetails({
+            let checkEmail = yield customerService.checkCustomerDetails({
                 email: req.body.email
             })
             if (_.isEmpty(checkEmail)) {
@@ -346,7 +355,7 @@ function delete_customer (req, res) {
 function update_customer (req, res) {
     Promise.coroutine(function* () {
 
-            let checkId = yield customerService.checkDetails({
+            let checkId = yield customerService.checkCustomerDetails({
                 customer_id: req.body.userData.customer_id
             })
             if (_.isEmpty(checkId)) {
@@ -356,17 +365,7 @@ function update_customer (req, res) {
                     data: {}
                 })
             }
-            let checkEmail = yield customerService.checkDetails({
-                email: req.body.email, 
-                phone_number: req.body.phone_number
-            })
-            if (!_.isEmpty(checkEmail)) {
-                return res.send({
-                    message: 'Customer already exists',
-                    status: 400,
-                    data: {}
-                })
-            }
+           
             let opts = {
                 updateObj: {},
                 whereCondition: {email: req.body.userData.email}
@@ -383,7 +382,27 @@ function update_customer (req, res) {
             if (req.body.email) {
                 opts.updateObj.email = req.body.email
             }
-
+            
+            if (opts.updateObj.email) {
+                let checkDetail = yield customerService.checkCustomerDetails ({email: opts.updateObj.email, is_deleted: 0});
+                if (!_.isEmpty(checkDetail)) {
+                    return res.send({
+                        message: 'Email already exists',
+                        status: 200,
+                        data: {}
+                    })
+                }
+            }
+            if (opts.updateObj.phone_number){
+                let checkDetail = yield customerService.checkCustomerDetails ({phone_number: opts.updateObj.phone_number, is_deleted: 0});
+                if (!_.isEmpty(checkDetail)) {
+                    return res.send({
+                        message: 'Phone no. already exists',
+                        status: 200,
+                        data: {}
+                    })
+                }
+            }
             let updateDetail = yield customerService.updateCustomer(opts);
             if (!_.isEmpty(updateDetail)) {
                 return res.send({
@@ -412,7 +431,7 @@ function update_customer (req, res) {
 //------------------------Block/Unblock customer-----------------------------
 function block_unblock_customer (req, res) {
     Promise.coroutine (function *() {
-        let checkEmail = yield customerService.checkDetails ({
+        let checkEmail = yield customerService.checkCustomerDetails ({
             email: req.body.email
         })
         if (_.isEmpty (checkEmail)){
@@ -459,7 +478,7 @@ function block_unblock_customer (req, res) {
 //----------------------------Get all drivers--------------------------------
 function get_all_drivers (req, res) {
     Promise.coroutine (function *() {
-        let checkEmail = yield customerService.checkDetails ({
+        let checkEmail = yield customerService.checkCustomerDetails ({
             email: req.body.email
         })
         if (_.isEmpty (checkEmail)){

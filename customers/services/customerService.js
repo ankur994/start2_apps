@@ -15,11 +15,16 @@ function registerCustomer (options){
 };
 
 //---------------Check user details already exist or not---------------
-function checkDetails (options){
+function checkCustomerDetails (options){
     return new Promise ((resolve, reject) => {
-        let sql = 'Select * from tb_customers where 1 ';
+        let sql = 'Select * from tb_customers WHERE 1';
         let params = [];
 
+        if (options.hasOwnProperty('is_deleted')){
+            sql += ' AND is_deleted = ?';
+            params.push(options.is_deleted)
+        }
+        
         if(options.customer_id){
             sql += ' AND customer_id = ?';
             params.push(options.customer_id)
@@ -41,6 +46,7 @@ function checkDetails (options){
         }
 
         con.query (sql, params, function (error, result){
+            console.log(sql, params)
             if (error){
                 reject (error)
             }
@@ -103,4 +109,4 @@ function updateCustomer (options){
 }
 
 
-module.exports = { registerCustomer, checkDetails, deleteEmail, updateUser, updateCustomer }
+module.exports = { registerCustomer, checkCustomerDetails, deleteEmail, updateUser, updateCustomer }

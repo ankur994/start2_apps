@@ -21,10 +21,11 @@ app.post('/get_all_drivers',            customerJoi.getDriversValidation, custom
 
 //----------------Driver API's------------------
 app.post('/signup_driver',              driverJoi.registerDriverValidation, driver.register_driver);
-app.post ('/verify_otp_driver',         driverJoi.verifyOtpValidation, driver.verify_otp_driver);
-app.post ('/login_driver',              driverJoi.loginDriverValidation, driver.login_driver);
+app.post('/verify_otp_driver',          driverJoi.verifyOtpValidation, driver.verify_otp_driver);
+app.post('/login_driver',               driverJoi.loginDriverValidation, driver.login_driver);
 app.post('/forgot_password_driver',     driverJoi.forgotDriverValidation, driver.forgot_password_driver);
-app.post ('/change_password_driver',    driverJoi.changePasswordValidation, middle.verify_token, driver.change_password_driver);
+app.post('/change_password_driver',     driverJoi.changePasswordValidation, middle.verify_token, driver.change_password_driver);
+app.post('update_driver',               driverJoi.updateDriverValidation, middle.verify_token, driver.update_driver);
 app.post('/block_unblock_driver',       driverJoi.blockDriverValidation, driver.block_unblock_driver);
 app.post('/delete_driver',              driverJoi.deleteDriverValidation, driver.delete_driver);
 
